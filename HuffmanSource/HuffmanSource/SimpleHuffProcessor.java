@@ -8,7 +8,7 @@
  *
  *  Student 1: Pavel Grinev
  *  UTEID: pg26747
- *  email address: pg26747
+ *  email address: pg26747@my.utexas.edu
  *
  *  Student 2: Elizabeth Kuromiema
  *  UTEID: eik254
@@ -59,7 +59,7 @@ public class SimpleHuffProcessor implements IHuffProcessor {
      * Reads the stream one byte (8 bits) at a time and returns occurrence counts for each value.
      */
     private int[] getFrequencies(BitInputStream bitIn) throws IOException {
-        int[] counts = new int[ALPH_SIZE];
+        int[] counts = new int[ALPH_SIZE + 1];
         int bit = bitIn.readBits(BITS_PER_WORD);
         while (bit != -1) {
             counts[bit]++;

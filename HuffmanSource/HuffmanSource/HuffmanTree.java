@@ -19,18 +19,18 @@ public class HuffmanTree implements IHuffConstants {
         // Create one leaf per symbol with a nonzero freq
         for (int value = 0; value < frequencies.length; value++) {
             if (frequencies[value] > 0) {
-                queue.queue(new TreeNode(value, frequencies[value]));
+                queue.enqueue(new TreeNode(value, frequencies[value]));
                 size++;
             }
         }
-        queue.queue(new TreeNode(PSEUDO_EOF, 1));
+        queue.enqueue(new TreeNode(PSEUDO_EOF, 1));
         size++;
 
         // Merge two lowest freq nodes until one root remains
         while (queue.size() > 1) {
             TreeNode left = queue.dequeue();
             TreeNode right = queue.dequeue();
-            queue.queue(new TreeNode(left, PSEUDO_EOF, right));
+            queue.enqueue(new TreeNode(left, PSEUDO_EOF, right));
         }
 
         // The final node in the queue is the root of the Huffman tree.
