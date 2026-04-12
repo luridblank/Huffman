@@ -1,25 +1,40 @@
 import java.util.ArrayList;
 
-import java.util.ArrayList;
-
 public class PriorityQueue {
 
-    private final static int MINIMUM_ELEMENT_SIZE = -1;
-    private final static int MAXIMUM_ELEMENT_SIZE = 256;
-
-    private ArrayList<TreeNode> queue;
+    private final ArrayList<TreeNode> queue;
 
     public PriorityQueue(){
         queue = new ArrayList<>();
     }
 
-    public TreeNode queue(int element) {
-        if (element < MINIMUM_ELEMENT_SIZE || element > MAXIMUM_ELEMENT_SIZE) {
-            throw new IllegalArgumentException("Element must be inbounds of 0-255.");
+    public TreeNode queue(TreeNode element) {
+        if (element == null) {
+            throw new IllegalArgumentException("Element cannot be null.");
         }
-        
+        for (int i = 0; i < queue.size(); i++) {
+            if (element.compareTo(queue.get(i)) < 0) {
+                queue.add(i, element);
+                return element;
+            }
+        }
+        queue.add(element);
+        return element;
+    }
 
-        
+    public TreeNode dequeue() {
+        if (queue.isEmpty()) {
+            return null;
+        }
+        return queue.remove(0);
+    }
+
+    public TreeNode dequeue(TreeNode element) {
+        return dequeue();
+    }
+
+    public int getSize() {
+        return queue.size();
     }
 
 }
