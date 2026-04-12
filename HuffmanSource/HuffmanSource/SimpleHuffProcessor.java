@@ -47,7 +47,12 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         showString("Not working yet");
         myViewer.update("Still not working");
         throw new IOException("preprocess not implemented");
+        BitInputStream read = new BitInputStream(in);
         //return 0;
+    }
+
+    private int[] getFrequencies() {
+
     }
 
     /**
