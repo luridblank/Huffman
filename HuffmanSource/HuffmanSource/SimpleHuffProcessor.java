@@ -6,9 +6,9 @@
  *
  *  Number of slip days used:
  *
- *  Student 1:
- *  UTEID:
- *  email address:
+ *  Student 1: Pavel Grinev
+ *  UTEID: pg26747
+ *  email address: pg26747
  *
  *  Student 2:
  *  UTEID:
