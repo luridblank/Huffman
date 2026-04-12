@@ -52,14 +52,10 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         HuffmanTree tree = new HuffmanTree();
         tree.buildTree(counts);
 
+
         return 0;
     }
 
-    /**
-     * Reads the stream one byte (8 bits) at a time and returns occurrence counts for each value.
-     * Length is ALPH_SIZE + 1 so HuffmanTree.buildTree (and SCF headers) have index PSEUDO_EOF;
-     * that slot stays 0 here because that symbol never appears in raw file bytes.
-     */
     private int[] getFrequencies(BitInputStream bitIn) throws IOException {
         int[] counts = new int[ALPH_SIZE + 1];
         int b = bitIn.readBits(BITS_PER_WORD);

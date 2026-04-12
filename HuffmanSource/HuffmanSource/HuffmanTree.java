@@ -17,7 +17,7 @@ public class HuffmanTree implements IHuffConstants {
         size = 0;
 
         // Create one leaf per symbol with a nonzero freq
-        for (int value = 0; value < frequencies.length; value++) {
+        for (int value = 0; value < ALPH_SIZE; value++) {
             if (frequencies[value] > 0) {
                 queue.enqueue(new TreeNode(value, frequencies[value]));
                 size++;
@@ -30,7 +30,7 @@ public class HuffmanTree implements IHuffConstants {
         while (queue.size() > 1) {
             TreeNode left = queue.dequeue();
             TreeNode right = queue.dequeue();
-            queue.enqueue(new TreeNode(left, PSEUDO_EOF, right));
+            queue.enqueue(new TreeNode(left, 0, right));
         }
 
         // The final node in the queue is the root of the Huffman tree.
