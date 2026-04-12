@@ -28,6 +28,9 @@ public class SimpleHuffProcessor implements IHuffProcessor {
     private HuffmanTree tree;
     private int[] counts;
     private String[] codes;
+    private int header;
+    private int savedBits;
+
 
     /**
      * Preprocess data so that compression is possible ---
@@ -48,6 +51,8 @@ public class SimpleHuffProcessor implements IHuffProcessor {
      * @throws IOException if an error occurs while reading from the input file.
      */
     public int preprocessCompress(InputStream in, int headerFormat) throws IOException {
+        header = headerFormat;
+
         BitInputStream bitIn = new BitInputStream(in);
         counts = getFrequencies(bitIn);
         bitIn.close();
@@ -74,14 +79,16 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         int headerBits;
 
         if (headerFormat == STORE_COUNTS) {
-            headerBits = (ALPH_SIZE) * BITS_PER_INT;
+            headerBits = ALPH_SIZE * BITS_PER_INT;
         } else if (headerFormat == STORE_TREE) {
             headerBits = countTreeBits(root);
         } else {
             throw new IllegalArgumentException("unknown header format");
         }
 
-        int totalBits = BITS_PER_INT + BITS_PER_INT + headerBits + compressedBits;
+        // One 32-bit word: STORE_COUNTS or STORE_TREE (magic | format), then header, then Huffman-coded body
+        int totalBits = BITS_PER_INT + headerBits + compressedBits;
+        savedBits = originalBits - totalBits;
         return originalBits - totalBits;
     }
 
