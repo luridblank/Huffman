@@ -89,6 +89,7 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         // One 32-bit word: STORE_COUNTS or STORE_TREE (magic | format), then header, then Huffman-coded body
         int totalBits = BITS_PER_INT + headerBits + compressedBits;
         savedBits = originalBits - totalBits;
+        header = headerFormat;
         return originalBits - totalBits;
     }
 
@@ -130,73 +131,12 @@ public class SimpleHuffProcessor implements IHuffProcessor {
      *                     writing to the output file.
      */
     public int compress(InputStream in, OutputStream out, boolean force) throws IOException {
-        if (tree == null || counts == null || codes == null) {
-            throw new IOException("preprocessCompress must be called before compress");
-        }
-
-        if (!force && mySavedBits < 0) {
-            showString("compression skipped: output would be larger than input");
+        if (!force && savedBits < 0) {
+            showString("Didn't compress because the output is larger than the input");
             return 0;
         }
+        
 
-        int bitsWritten = 0;
-        BitOutputStream bitOut = new BitOutputStream(out);
-        BitInputStream bitIn = new BitInputStream(in);
-
-        bitsWritten += writeHeader(bitOut);
-
-        int value = bitIn.readBits(BITS_PER_WORD);
-        while (value != -1) {
-            bitsWritten += writeCode(bitOut, codes[value]);
-            value = bitIn.readBits(BITS_PER_WORD);
-        }
-
-        bitsWritten += writeCode(bitOut, codes[PSEUDO_EOF]);
-
-        bitIn.close();
-        bitOut.close();
-        return bitsWritten;
-    }
-
-    private int writeHeader(BitOutputStream bitOut) {
-        int bitsWritten = 0;
-
-        bitOut.writeBits(BITS_PER_INT, MAGIC_NUMBER);
-        bitsWritten += BITS_PER_INT;
-
-        bitOut.writeBits(BITS_PER_INT, myHeaderFormat);
-        bitsWritten += BITS_PER_INT;
-
-        if (myHeaderFormat == STORE_COUNTS) {
-            for (int value = 0; value < ALPH_SIZE; value++) {
-                bitOut.writeBits(BITS_PER_INT, counts[value]);
-                bitsWritten += BITS_PER_INT;
-            }
-        } else if (myHeaderFormat == STORE_TREE) {
-            bitsWritten += writeTreeHeader(tree.getRoot(), bitOut);
-        } else {
-            throw new IllegalStateException("unknown header format");
-        }
-
-        return bitsWritten;
-    }
-
-    private int writeTreeHeader(TreeNode node, BitOutputStream bitOut) {
-        if (node.isLeaf()) {
-            bitOut.writeBits(1, 1);
-            bitOut.writeBits(BITS_PER_WORD + 1, node.getValue());
-            return 1 + (BITS_PER_WORD + 1);
-        }
-
-        bitOut.writeBits(1, 0);
-        return 1 + writeTreeHeader(node.getLeft(), bitOut) + writeTreeHeader(node.getRight(), bitOut);
-    }
-
-    private int writeCode(BitOutputStream bitOut, String code) {
-        for (int i = 0; i < code.length(); i++) {
-            bitOut.writeBits(1, code.charAt(i) - '0');
-        }
-        return code.length();
     }
 
     /**
