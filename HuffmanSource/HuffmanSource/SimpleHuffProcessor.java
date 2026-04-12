@@ -102,7 +102,7 @@ public class SimpleHuffProcessor implements IHuffProcessor {
 
     private int countTreeBits(TreeNode node) {
         if (node.isLeaf()) {
-            return 1 + BITS_PER_WORD + 1;
+            return 1 + (BITS_PER_WORD + 1);
         }
         return 1 + countTreeBits(node.getLeft()) + countTreeBits(node.getRight());
     }
