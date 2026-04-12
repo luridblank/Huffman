@@ -8,7 +8,7 @@ public class PriorityQueue {
         queue = new ArrayList<>();
     }
 
-    public TreeNode queue(TreeNode element) {
+    public TreeNode enqueue(TreeNode element) {
         if (element == null) {
             throw new IllegalArgumentException("Element cannot be null.");
         }
