@@ -8,7 +8,7 @@ public class HuffmanTree implements IHuffConstants {
         size = 0;
     }
 
-    public TreeNode buildFromFrequencies(int[] frequencies) {
+    public TreeNode buildTree(int[] frequencies) {
         if (frequencies == null || frequencies.length != ALPH_SIZE + 1) {
             throw new IllegalArgumentException("frequencies must have length ALPH_SIZE + 1");
         }
@@ -23,9 +23,11 @@ public class HuffmanTree implements IHuffConstants {
                 size++;
             }
         }
+        queue.queue(new TreeNode(PSEUDO_EOF, 1));
+        size++;
 
         // Merge two lowest freq nodes until one root remains
-        while (queue.getSize() > 1) {
+        while (queue.size() > 1) {
             TreeNode left = queue.dequeue();
             TreeNode right = queue.dequeue();
             queue.queue(new TreeNode(left, PSEUDO_EOF, right));

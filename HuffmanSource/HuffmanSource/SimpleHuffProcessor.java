@@ -27,11 +27,6 @@ public class SimpleHuffProcessor implements IHuffProcessor {
     private IHuffViewer myViewer;
 
     /**
-     * Frequency of each 8-bit value in the last preprocessed input (indices 0 .. ALPH_SIZE - 1).
-     */
-    private int[] myCounts;
-
-    /**
      * Preprocess data so that compression is possible ---
      * count characters/create tree/store state so that
      * a subsequent call to compress will work. The InputStream
@@ -53,6 +48,10 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         BitInputStream bitIn = new BitInputStream(in);
         int[] counts = getFrequencies(bitIn);
         bitIn.close();
+
+        HuffmanTree tree = new HuffmanTree();
+        tree.buildTree(counts);
+
         return 0;
     }
 
@@ -60,7 +59,7 @@ public class SimpleHuffProcessor implements IHuffProcessor {
      * Reads the stream one byte (8 bits) at a time and returns occurrence counts for each value.
      */
     private int[] getFrequencies(BitInputStream bitIn) throws IOException {
-        int[] counts = new int[IHuffConstants.ALPH_SIZE];
+        int[] counts = new int[ALPH_SIZE];
         int bit = bitIn.readBits(BITS_PER_WORD);
         while (bit != -1) {
             counts[bit]++;

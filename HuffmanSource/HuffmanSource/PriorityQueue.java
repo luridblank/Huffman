@@ -29,11 +29,7 @@ public class PriorityQueue {
         return queue.remove(0);
     }
 
-    public TreeNode dequeue(TreeNode element) {
-        return dequeue();
-    }
-
-    public int getSize() {
+    public int size() {
         return queue.size();
     }
 
