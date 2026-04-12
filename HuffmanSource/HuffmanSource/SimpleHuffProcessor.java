@@ -25,6 +25,9 @@ import java.io.OutputStream;
 public class SimpleHuffProcessor implements IHuffProcessor {
 
     private IHuffViewer myViewer;
+    private HuffmanTree tree;
+    private int[] counts;
+    private String[] codes;
 
     /**
      * Preprocess data so that compression is possible ---
@@ -46,13 +49,13 @@ public class SimpleHuffProcessor implements IHuffProcessor {
      */
     public int preprocessCompress(InputStream in, int headerFormat) throws IOException {
         BitInputStream bitIn = new BitInputStream(in);
-        int[] counts = getFrequencies(bitIn);
+        counts = getFrequencies(bitIn);
         bitIn.close();
 
-        HuffmanTree tree = new HuffmanTree();
+        tree = new HuffmanTree();
         tree.buildTree(counts);
         TreeNode root = tree.getRoot();
-        String[] codes = tree.getCodes(root);
+        codes = tree.getCodes(root);
 
         int originalBits = 0;
         for (int value = 0; value < ALPH_SIZE; value++) {
@@ -71,7 +74,7 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         int headerBits;
 
         if (headerFormat == STORE_COUNTS) {
-            headerBits = (ALPH_SIZE + 1) * BITS_PER_INT;
+            headerBits = (ALPH_SIZE) * BITS_PER_INT;
         } else if (headerFormat == STORE_TREE) {
             headerBits = countTreeBits(root);
         } else {
