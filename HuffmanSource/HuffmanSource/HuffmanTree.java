@@ -8,7 +8,7 @@ public class HuffmanTree implements IHuffConstants {
         size = 0;
     }
 
-    public TreeNode buildTree(int[] frequencies) {
+    public void buildTree(int[] frequencies) {
         if (frequencies == null || frequencies.length != ALPH_SIZE + 1) {
             throw new IllegalArgumentException("frequencies must have length ALPH_SIZE + 1");
         }
@@ -19,32 +19,45 @@ public class HuffmanTree implements IHuffConstants {
         // Create one leaf per symbol with a nonzero freq
         for (int value = 0; value < frequencies.length; value++) {
             if (frequencies[value] > 0) {
-                queue.queue(new TreeNode(value, frequencies[value]));
+                queue.enqueue(new TreeNode(value, frequencies[value]));
                 size++;
             }
         }
-        queue.queue(new TreeNode(PSEUDO_EOF, 1));
+        queue.enqueue(new TreeNode(PSEUDO_EOF, 1));
         size++;
 
         // Merge two lowest freq nodes until one root remains
         while (queue.size() > 1) {
             TreeNode left = queue.dequeue();
             TreeNode right = queue.dequeue();
-            queue.queue(new TreeNode(left, PSEUDO_EOF, right));
+            queue.enqueue(new TreeNode(left, PSEUDO_EOF, right));
         }
 
         // The final node in the queue is the root of the Huffman tree.
         root = queue.dequeue();
-        return root;
+    }
+
+    public String[] getCodes(TreeNode tree) {
+        String[] codes = new String[ALPH_SIZE + 1];
+        generateCodes(tree, "", codes);
+        return codes;
+    }
+
+    private void generateCodes(TreeNode node, String code, String[] codes) {
+        if (node.isLeaf()) {
+            codes[node.getValue()] = code;
+        } else {
+            generateCodes(node.getLeft(), code + "0", codes);
+            generateCodes(node.getRight(), code + "1", codes);
+        }
     }
 
     public TreeNode getRoot() {
         return root;
     }
 
-    public int getLeafCount() {
+    public int size() {
         return size;
     }
 
-    
 }
