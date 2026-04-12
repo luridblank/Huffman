@@ -45,18 +45,48 @@ public class SimpleHuffProcessor implements IHuffProcessor {
      * @throws IOException if an error occurs while reading from the input file.
      */
     public int preprocessCompress(InputStream in, int headerFormat) throws IOException {
+        int[] counts;
         BitInputStream bitIn = new BitInputStream(in);
-        int[] counts = getFrequencies(bitIn);
+        counts = getFrequencies(bitIn);
         bitIn.close();
 
         HuffmanTree tree = new HuffmanTree();
         tree.buildTree(counts);
+        TreeNode root = tree.getRoot();
+        String[] codes = tree.getCodes(root);
 
-        return 0;
+        int originalBits = 0;
+        for (int value = 0; value < ALPH_SIZE; value++) {
+            originalBits += counts[value] * BITS_PER_WORD;
+        }
+
+        int compressedBits = 0;
+        for (int value = 0; value < ALPH_SIZE; value++) {
+            if (counts[value] > 0 && codes[value] != null) {
+                compressedBits += counts[value] * codes[value].length();
+            }
+        }
+
+        compressedBits += codes[PSEUDO_EOF].length();
+
+        int headerBits;
+        
+        if (headerFormat == STORE_COUNTS) {
+            headerBits = (ALPH_SIZE + 1) * BITS_PER_INT;
+        } else if (headerFormat == STORE_TREE) {
+            headerBits = countTreeBits(root);
+        } else {
+            throw new IllegalArgumentException("unknown header format");
+        }
+
+        int totalBits = BITS_PER_INT + BITS_PER_INT + headerBits + compressedBits;
+        return originalBits - totalBits;
     }
 
     /**
      * Reads the stream one byte (8 bits) at a time and returns occurrence counts for each value.
+     * Length is ALPH_SIZE + 1 so HuffmanTree.buildTree (and SCF headers) have index PSEUDO_EOF;
+     * that slot stays 0 here because that symbol never appears in raw file bytes.
      */
     private int[] getFrequencies(BitInputStream bitIn) throws IOException {
         int[] counts = new int[ALPH_SIZE + 1];
@@ -66,6 +96,13 @@ public class SimpleHuffProcessor implements IHuffProcessor {
             bit = bitIn.readBits(BITS_PER_WORD);
         }
         return counts;
+    }
+
+    private int countTreeBits(TreeNode node) {
+        if (node.isLeaf()) {
+            return 1 + BITS_PER_WORD + 1;
+        }
+        return 1 + countTreeBits(node.getLeft()) + countTreeBits(node.getRight());
     }
 
     /**
