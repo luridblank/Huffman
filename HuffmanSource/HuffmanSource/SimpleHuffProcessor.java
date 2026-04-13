@@ -81,13 +81,12 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         if (headerFormat == STORE_COUNTS) {
             headerBits = ALPH_SIZE * BITS_PER_INT;
         } else if (headerFormat == STORE_TREE) {
-            headerBits = countTreeBits(root);
+            headerBits = BITS_PER_INT + countTreeBits(root);
         } else {
             throw new IllegalArgumentException("unknown header format");
         }
 
-        // One 32-bit word: STORE_COUNTS or STORE_TREE (magic | format), then header, then Huffman-coded body
-        int totalBits = BITS_PER_INT + headerBits + compressedBits;
+        int totalBits = (2 * BITS_PER_INT) + headerBits + compressedBits;
         savedBits = originalBits - totalBits;
         header = headerFormat;
         return originalBits - totalBits;
@@ -131,14 +130,31 @@ public class SimpleHuffProcessor implements IHuffProcessor {
      *                     writing to the output file.
      */
     public int compress(InputStream in, OutputStream out, boolean force) throws IOException {
-        if (!force && savedBits < 0) {
-            myViewer.showError("Could not compress because output is larger than input");
-            return 0;
-        }
 
         BitOutputStream bitOut = new BitOutputStream(out);
         BitInputStream bitIn = new BitInputStream(in);
         int writtenBits = writeHeader(bitOut);
+
+        int val = bitIn.readBits(BITS_PER_WORD);
+
+        while (val != -1) {
+            String code = codes[val];
+            for (int i = 0; i < code.length(); i++) {
+                bitOut.writeBits(1, code.charAt(i) - '0');
+            }
+            writtenBits += code.length();
+            val = bitIn.readBits(BITS_PER_WORD);
+        }
+
+        String eofCode = codes[PSEUDO_EOF];
+        for (int i = 0; i < eofCode.length(); i++) {
+            bitOut.writeBits(1, eofCode.charAt(i) - '0');
+        }
+        writtenBits += eofCode.length();
+
+        bitIn.close();
+        bitOut.close();
+        return writtenBits;
 
     }
 
