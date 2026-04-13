@@ -132,7 +132,7 @@ public class SimpleHuffProcessor implements IHuffProcessor {
      */
     public int compress(InputStream in, OutputStream out, boolean force) throws IOException {
         if (!force && savedBits < 0) {
-            showString("Didn't compress because the output is larger than the input");
+            myViewer.showError("Could not compress because output is larger than input");
             return 0;
         }
 
@@ -140,14 +140,12 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         BitInputStream bitIn = new BitInputStream(in);
         int writtenBits = writeHeader(bitOut);
 
-       
-
     }
 
     private int writeHeader(BitOutputStream bitOut) {
-        bitOut.writeBits(MAGIC_NUMBER, BITS_PER_INT);
+        bitOut.writeBits(BITS_PER_INT, MAGIC_NUMBER);
         int writtenBits = 0;
-        writtenBits += MAGIC_NUMBER;
+        writtenBits += BITS_PER_INT;
 
         bitOut.writeBits(BITS_PER_INT, header);
         writtenBits += BITS_PER_INT;
@@ -158,12 +156,31 @@ public class SimpleHuffProcessor implements IHuffProcessor {
                 writtenBits += BITS_PER_INT;
             }
         } else if (header == STORE_TREE) {
-            // i think this is your method
+            TreeNode root = tree.getRoot();
+            int treeBits = countTreeBits(root);
+            bitOut.writeBits(BITS_PER_INT, treeBits);
+            writtenBits += BITS_PER_INT;
+            writtenBits += compressTree(root, bitOut);
         } else {
-            throw new IllegalArgumentException("Unknown header format.");
+            throw new IllegalStateException("Unknown header format.");
         }
         return writtenBits;
     }
+
+    private int compressTree(TreeNode node, BitOutputStream out) {
+        if (node.isLeaf()) {
+            out.writeBits(1, 1);
+            out.writeBits(BITS_PER_WORD + 1, node.getValue());
+            return 1 + BITS_PER_WORD + 1;
+        } else {
+            out.writeBits(1, 0);
+            int bits = 1;
+            bits += compressTree(node.getLeft(), out);
+            bits += compressTree(node.getRight(), out);
+            return bits;
+        }
+    }
+
 
     /**
      * Uncompress a previously compressed stream in, writing the
