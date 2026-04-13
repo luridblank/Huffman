@@ -135,8 +135,34 @@ public class SimpleHuffProcessor implements IHuffProcessor {
             showString("Didn't compress because the output is larger than the input");
             return 0;
         }
-        
 
+        BitOutputStream bitOut = new BitOutputStream(out);
+        BitInputStream bitIn = new BitInputStream(in);
+        int writtenBits = writeHeader(bitOut);
+
+       
+
+    }
+
+    private int writeHeader(BitOutputStream bitOut) {
+        bitOut.writeBits(MAGIC_NUMBER, BITS_PER_INT);
+        int writtenBits = 0;
+        writtenBits += MAGIC_NUMBER;
+
+        bitOut.writeBits(BITS_PER_INT, header);
+        writtenBits += BITS_PER_INT;
+
+        if (header == STORE_COUNTS) {
+            for (int value = 0; value < ALPH_SIZE; value++) {
+                bitOut.writeBits(BITS_PER_INT, counts[value]);
+                writtenBits += BITS_PER_INT;
+            }
+        } else if (header == STORE_TREE) {
+            // i think this is your method
+        } else {
+            throw new IllegalArgumentException("Unknown header format.");
+        }
+        return writtenBits;
     }
 
     /**
