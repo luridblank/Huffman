@@ -130,6 +130,10 @@ public class SimpleHuffProcessor implements IHuffProcessor {
      *                     writing to the output file.
      */
     public int compress(InputStream in, OutputStream out, boolean force) throws IOException {
+        if (!force && savedBits < 0) {
+            myViewer.showError("Could not compress because output is larger than input");
+            return 0;
+        }
 
         BitOutputStream bitOut = new BitOutputStream(out);
         BitInputStream bitIn = new BitInputStream(in);
@@ -155,7 +159,6 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         bitIn.close();
         bitOut.close();
         return writtenBits;
-
     }
 
     private int writeHeader(BitOutputStream bitOut) {
