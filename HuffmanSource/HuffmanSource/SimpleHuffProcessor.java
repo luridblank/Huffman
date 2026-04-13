@@ -210,9 +210,105 @@ public class SimpleHuffProcessor implements IHuffProcessor {
      *                     writing to the output file.
      */
     public int uncompress(InputStream in, OutputStream out) throws IOException {
-        throw new IOException("uncompress not implemented");
-        //return 0;
+
+        // Read compressed bits and emit recovered bytes.
+        BitInputStream bitIn = new BitInputStream(in);
+        BitOutputStream bitOut = new BitOutputStream(out);
+
+        // First 32 bits must be the Huffman file signature.
+        int magic = bitIn.readBits(BITS_PER_INT);
+        checkMagicNumber(magic);
+
+        // Header determines how to rebuild the decoding tree.
+        int headerValue = bitIn.readBits(BITS_PER_INT);
+        TreeNode root;
+
+        if (headerValue == STORE_COUNTS) {
+            // Rebuild tree from 256 stored frequencies.
+            counts = fillHeader(bitIn);
+            tree = new HuffmanTree();
+            tree.buildTree(counts);
+            root = tree.getRoot();
+        } else if (headerValue == STORE_TREE) {
+            // Rebuild tree directly from serialized preorder bits.
+            root = buildTreeFromTree(bitIn);
+        } else {
+            throw new IOException("Bad header format in compressed file");
+        }
+
+        if (root == null) {
+            throw new IOException("Bad header: unable to build decoding tree");
+        }
+        bitIn.close();
+        bitOut.close();
+        throw new IOException("uncompress header check is implemented, but full uncompress is not implemented yet");
     }
+
+    private void checkMagicNumber(int bits) throws IOException {
+        // Reject files that do not start with MAGIC_NUMBER.
+        if (bits != MAGIC_NUMBER) {
+            throw new IOException("Not a Huffman-compressed file: bad magic number");
+        }
+    }
+
+    private int[] fillHeader(BitInputStream bitIn) throws IOException {
+        // Count format stores 256 frequencies, then we restore PSEUDO_EOF.
+        int[] freqs = new int[ALPH_SIZE + 1];
+
+        for (int value = 0; value < ALPH_SIZE; value++) {
+            // Each frequency is stored in a full 32-bit int.
+            int count = bitIn.readBits(BITS_PER_INT);
+            if (count == -1) {
+                throw new IOException("Bad header: not enough count data");
+            }
+            freqs[value] = count;
+        }
+
+        // PSEUDO_EOF is not stored in count format; restore it here.
+        freqs[PSEUDO_EOF] = 1;
+        return freqs;
+    }
+
+    private TreeNode buildTreeFromTree(BitInputStream bitIn) throws IOException {
+        // Tree format starts with number of bits used by the serialized tree.
+        int treeBits = bitIn.readBits(BITS_PER_INT);
+        if (treeBits == -1) {
+            throw new IOException("missing tree size");
+        }
+
+        // Track consumed tree bits so we can validate the header size.
+        int[] bitsUsed = {0};
+        TreeNode root = readTree(bitIn, bitsUsed);
+        if (bitsUsed[0] != treeBits) {
+            throw new IllegalStateException("tree size mismatch");
+        }
+        return root;
+    }
+
+    private TreeNode readTree(BitInputStream bitIn, int[] bitsUsed) throws IOException {
+        // Preorder decode: 1 => leaf (next 9 bits), 0 => internal (read left, then right).
+        int marker = bitIn.readBits(1);
+        if (marker == -1) {
+            throw new IllegalStateException("unexpected end of file");
+        }
+        bitsUsed[0]++;
+
+        if (marker == 1) {
+            // Leaf node stores one 9-bit value (0..256).
+            int value = bitIn.readBits(BITS_PER_WORD + 1);
+            if (value == -1) {
+                throw new IllegalStateException("no leaf value");
+            }
+            bitsUsed[0] += BITS_PER_WORD + 1;
+            return new TreeNode(value, 0);
+        }
+
+        // Internal node: recursively decode left subtree, then right.
+        TreeNode left = readTree(bitIn, bitsUsed);
+        TreeNode right = readTree(bitIn, bitsUsed);
+        return new TreeNode(left, 0, right);
+    }
+
 
     public void setViewer(IHuffViewer viewer) {
         myViewer = viewer;
