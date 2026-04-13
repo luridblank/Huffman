@@ -86,9 +86,8 @@ public class SimpleHuffProcessor implements IHuffProcessor {
             throw new IllegalArgumentException("unknown header format");
         }
 
-        int totalBits = (2 * BITS_PER_INT) + headerBits + compressedBits;
+        int totalBits = BITS_PER_INT + BITS_PER_INT + headerBits + compressedBits;
         savedBits = originalBits - totalBits;
-        header = headerFormat;
         return originalBits - totalBits;
     }
 
@@ -199,7 +198,6 @@ public class SimpleHuffProcessor implements IHuffProcessor {
             return bits;
         }
     }
-
 
     /**
      * Uncompress a previously compressed stream in, writing the
