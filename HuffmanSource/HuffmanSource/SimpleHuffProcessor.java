@@ -61,6 +61,9 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         TreeNode root = tree.getRoot();
         codes = tree.getCodes(root);
 
+        showString("PSEUDO_EOF code length=" + codes[PSEUDO_EOF].length());
+        showString("distinct symbols (nonzero counts)=" + countNonZeroCounts(counts));
+
         int originalBits = 0;
         for (int value = 0; value < ALPH_SIZE; value++) {
             originalBits += counts[value] * BITS_PER_WORD;
@@ -87,8 +90,24 @@ public class SimpleHuffProcessor implements IHuffProcessor {
 
         int totalBits = BITS_PER_INT + BITS_PER_INT + headerBits + compressedBits;
         savedBits = originalBits - totalBits;
+
+        showString("--- preprocessCompress ---");
+        showString("headerFormat=" + headerFormat + (headerFormat == STORE_COUNTS ? " (STORE_COUNTS)" : " (STORE_TREE)"));
+        showString("origBits=" + originalBits);
+        showString("dataBits(no header)=" + compressedBits);
+        showString("headerBits=" + headerBits);
+        showString("magic+format bits=" + (BITS_PER_INT + BITS_PER_INT));
+        showString("totalBits=" + totalBits);
+        showString("savedBits=" + savedBits);
+
         return originalBits - totalBits;
     }
+
+    private int countNonZeroCounts(int[] a) {
+    int c = 0;
+    for (int x : a) if (x > 0) c++;
+    return c;
+}
 
     /**
      * Reads the stream one byte (8 bits) at a time and returns occurrence counts for each value.
@@ -220,6 +239,11 @@ public class SimpleHuffProcessor implements IHuffProcessor {
 
         // Header determines how to rebuild the decoding tree.
         int headerValue = bitIn.readBits(BITS_PER_INT);
+        if (headerValue == -1) {
+            bitIn.close();
+            bitOut.close();
+            throw new IOException("Bad header: missing header format");
+        }
         TreeNode root;
 
         if (headerValue == STORE_COUNTS) {
@@ -231,15 +255,20 @@ public class SimpleHuffProcessor implements IHuffProcessor {
             // Rebuild tree directly from serialized preorder bits.
             root = buildTreeFromTree(bitIn);
         } else {
+            bitIn.close();
+            bitOut.close();
             throw new IOException("Bad header format in compressed file");
         }
 
         if (root == null) {
             throw new IOException("Bad header: unable to build decoding tree");
         }
+
+        int writtenBits = decode(root, bitIn, bitOut);
+        
         bitIn.close();
         bitOut.close();
-        throw new IOException("uncompress header check is implemented, but full uncompress is not implemented yet");
+        return writtenBits;
     }
 
     private void checkMagicNumber(int bits) throws IOException {
@@ -278,7 +307,7 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         int[] bitsUsed = {0};
         TreeNode root = readTree(bitIn, bitsUsed);
         if (bitsUsed[0] != treeBits) {
-            throw new IllegalStateException("tree size mismatch");
+            throw new IOException("Bad header: tree size mismatch");
         }
         return root;
     }
@@ -287,7 +316,7 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         // Preorder decode: 1 => leaf (next 9 bits), 0 => internal (read left, then right).
         int marker = bitIn.readBits(1);
         if (marker == -1) {
-            throw new IllegalStateException("unexpected end of file");
+            throw new IOException("unexpected end of file");
         }
         bitsUsed[0]++;
 
@@ -295,7 +324,7 @@ public class SimpleHuffProcessor implements IHuffProcessor {
             // Leaf node stores one 9-bit value (0..256).
             int value = bitIn.readBits(BITS_PER_WORD + 1);
             if (value == -1) {
-                throw new IllegalStateException("no leaf value");
+                throw new IOException("no leaf value");
             }
             bitsUsed[0] += BITS_PER_WORD + 1;
             return new TreeNode(value, 0);
@@ -305,6 +334,44 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         TreeNode left = readTree(bitIn, bitsUsed);
         TreeNode right = readTree(bitIn, bitsUsed);
         return new TreeNode(left, 0, right);
+    }
+
+    private int decode(TreeNode root, BitInputStream bitIn, BitOutputStream bitOut) throws IOException {
+        int writtenBits = 0;
+        boolean done = false;
+        TreeNode current = root;
+
+        while(!done) {
+            int bit = bitIn.readBits(1);
+            if(bit == -1) {
+                throw new IOException("Unexpected end of file, no PSEUDO_EOF found");
+            } else {
+
+                // traverse tree
+                if(bit == 0) {
+                    current = current.getLeft();
+                } else {
+                    current = current.getRight();
+                }
+
+                if (current == null) {
+                    throw new IOException("Bad compressed data: traversed to null node");
+                }
+
+                // check if reached leaf
+                if(current.isLeaf()) {
+                    if(current.getValue() == PSEUDO_EOF) {
+                        done = true;
+                    } else {
+                        // write the character and reset
+                        bitOut.writeBits(BITS_PER_WORD, current.getValue());
+                        writtenBits += BITS_PER_WORD;
+                        current = root;
+                    }
+                }
+            }
+        }
+        return writtenBits;
     }
 
 
