@@ -57,8 +57,7 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         counts = getFrequencies(bitIn);
         bitIn.close();
 
-        tree = new HuffmanTree();
-        tree.buildTree(counts);
+        tree = new HuffmanTree(counts);
         TreeNode root = tree.getRoot();
         codes = tree.getCodes(root);
 
@@ -226,8 +225,7 @@ public class SimpleHuffProcessor implements IHuffProcessor {
         if (headerValue == STORE_COUNTS) {
             // Rebuild tree from 256 stored frequencies.
             counts = fillHeader(bitIn);
-            tree = new HuffmanTree();
-            tree.buildTree(counts);
+            tree = new HuffmanTree(counts);
             root = tree.getRoot();
         } else if (headerValue == STORE_TREE) {
             // Rebuild tree directly from serialized preorder bits.

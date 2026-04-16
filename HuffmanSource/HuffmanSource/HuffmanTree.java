@@ -3,12 +3,8 @@ public class HuffmanTree implements IHuffConstants {
     private TreeNode root;
     private int size;
 
-    public HuffmanTree() {
-        root = null;
-        size = 0;
-    }
-
-    public void buildTree(int[] frequencies) {
+    // Felt the buildTree method was a bit unnecessary so made the constructor build tree
+    public HuffmanTree(int[] frequencies) {
         if (frequencies == null || frequencies.length != ALPH_SIZE + 1) {
             throw new IllegalArgumentException("frequencies must have length ALPH_SIZE + 1");
         }
